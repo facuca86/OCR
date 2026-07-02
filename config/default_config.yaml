@@ -1,0 +1,53 @@
+preprocessing:
+  enabled: true
+  denoise: true
+  enhance_contrast: true
+  deskew: true
+  binarize: true
+  binarization_method: adaptive_gaussian
+  detect_orientation: true
+  remove_borders: true
+  crop_margins: true
+  target_dpi: 300
+  max_dimension_px: 6000
+layout:
+  analyzer: heuristic
+  detect_columns: true
+  max_columns: 4
+  detect_headers: true
+  detect_footers: true
+  detect_footnotes: true
+  detect_page_numbers: true
+  remove_headers: false
+  remove_footers: false
+  remove_page_numbers: false
+ocr:
+  engine: tesseract
+  languages:
+  - spa
+  - eng
+  use_gpu: false
+  psm: 3
+  oem: 1
+  min_confidence: 40.0
+  detect_bold_italic: true
+translation:
+  enabled: false
+  engine: anthropic
+  source_language: null
+  target_language: en
+  preserve_structure: true
+  anthropic_model: claude-sonnet-5
+export:
+  formats:
+  - pdf
+  output_dir: output
+  keep_images: true
+  keep_tables: true
+  image_quality: 85
+  image_max_width_px: 1600
+  embed_page_numbers: false
+performance:
+  max_workers: null
+  use_gpu: false
+  batch_size: 1

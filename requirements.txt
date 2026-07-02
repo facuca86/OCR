@@ -1,0 +1,19 @@
+# Dependencias mínimas para ejecutar el pipeline (sin GUI ni motores opcionales).
+# Instalar con: pip install -r requirements.txt
+numpy>=1.26
+opencv-python-headless>=4.9
+pymupdf>=1.24
+pillow>=10.3
+pytesseract>=0.3.10
+pydantic>=2.6
+pydantic-settings>=2.2
+pyyaml>=6.0
+python-docx>=1.1
+ebooklib>=0.18
+weasyprint>=61.0
+markdown>=3.6
+langdetect>=1.0.9
+click>=8.1
+
+# Requiere además el binario del sistema `tesseract-ocr` (y `poppler-utils`
+# como respaldo). Ver README.md > "Requisitos del sistema".
