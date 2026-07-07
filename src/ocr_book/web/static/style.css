@@ -1,0 +1,155 @@
+:root {
+  color-scheme: light dark;
+  --fg: #1a1a1a;
+  --bg: #ffffff;
+  --muted: #6b6b6b;
+  --border: #d8d8d8;
+  --accent: #2f6fed;
+  --error-bg: #fdecea;
+  --error-fg: #9c2a1f;
+  --card-bg: #f7f7f8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #eaeaea;
+    --bg: #121212;
+    --muted: #9a9a9a;
+    --border: #333333;
+    --accent: #6d9bff;
+    --error-bg: #3a1f1c;
+    --error-fg: #ff9a8c;
+    --card-bg: #1b1b1e;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar nav { display: flex; gap: 1.25rem; align-items: center; }
+.topbar a, .link-button { color: var(--fg); text-decoration: none; }
+.topbar a:hover, .link-button:hover { color: var(--accent); }
+
+.brand { font-weight: 700; font-size: 1.1rem; }
+
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.container.narrow { max-width: 380px; margin-top: 4rem; }
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.1rem; margin-top: 0; }
+
+label { display: block; margin: 0.6rem 0 0.25rem; font-size: 0.9rem; }
+label.checkbox { display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; margin: 0.4rem 0; }
+label.checkbox input { margin: 0; }
+label.checkbox.disabled { color: var(--muted); }
+
+input[type="text"], input[type="password"], select {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.95rem;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0.9rem 0;
+  padding: 0.75rem 1rem 1rem;
+}
+legend { padding: 0 0.4rem; font-size: 0.85rem; color: var(--muted); }
+
+button, .button {
+  display: inline-block;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+}
+button.secondary { background: transparent; color: var(--fg); border: 1px solid var(--border); }
+button:disabled { opacity: 0.6; cursor: default; }
+
+.disabled-group { opacity: 0.5; }
+.disabled-group.enabled { opacity: 1; }
+
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.drop-zone.dragover { border-color: var(--accent); background: rgba(47, 111, 237, 0.06); }
+.drop-zone input[type="file"] { display: block; margin: 0.75rem auto 0; }
+
+.muted { color: var(--muted); font-size: 0.9rem; }
+.muted.small { font-size: 0.8rem; }
+.error {
+  background: var(--error-bg);
+  color: var(--error-fg);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+.badge {
+  font-size: 0.7rem;
+  background: var(--border);
+  color: var(--muted);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.4rem;
+}
+
+.progress-bar {
+  height: 10px;
+  background: var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 0.75rem 0;
+}
+.progress-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; }
+
+.job-table { width: 100%; border-collapse: collapse; }
+.job-table th, .job-table td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); }
+
+.status-pill { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.8rem; }
+.status-pending { background: #e5e5e5; color: #333; }
+.status-running { background: #fff3cd; color: #7a5b00; }
+.status-done { background: #d4edda; color: #175b2c; }
+.status-error { background: var(--error-bg); color: var(--error-fg); }
+
+#preview-frame { width: 100%; height: 60vh; border: 1px solid var(--border); border-radius: 8px; }
+
+form.inline { display: inline; margin: 0; }

@@ -13,3 +13,8 @@ output/
 
 # PDFs sintéticos generados por tests/conftest.py (no hace falta versionarlos)
 tests/fixtures/*.pdf
+
+# Carpeta de trabajo de la interfaz web (subidas, salidas, jobs.db): datos
+# de usuario, no del repositorio.
+web_data/
+*.db

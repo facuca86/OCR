@@ -237,7 +237,109 @@ las instancias se construyen en *factories* (`ocr/engine_factory.py`,
 Esto satisface el requisito de que "cada módulo debe poder reemplazarse por
 otro" sin tocar el resto del sistema.
 
-## 12. Resumen de la pila tecnológica
+## 13. Interfaz web
+
+La GUI (PySide6) asume un usuario con acceso a la máquina donde corre el
+proceso (arrastrar y soltar archivos locales, ver una vista previa nativa).
+El objetivo de la interfaz web es distinto: poder lanzar conversiones desde
+un navegador contra un servidor propio, potencialmente remoto, sin abrir
+una sesión de escritorio. Se agrega como una capa nueva (`ocr_book.web/`)
+que **no duplica lógica de negocio**: llama a `PipelineOrchestrator`
+exactamente igual que la CLI y la GUI, solo cambia cómo se dispara y cómo
+se reporta el resultado.
+
+### 13.1 FastAPI + HTML servido por el propio backend (sin build de frontend)
+
+Se evaluó una SPA (React/Vue) contra un backend HTTP separado, pero para
+"subir un archivo, elegir opciones, ver progreso, descargar el resultado"
+una SPA es una superficie de mantenimiento (build, bundler, versión de
+Node, estado en el cliente) que no aporta nada frente a plantillas
+Jinja2 servidas directamente por FastAPI con un poco de JS vanilla para el
+polling y el drag&drop. Esto prioriza lo que pidió el proyecto
+explícitamente: simplicidad de mantenimiento por sobre sofisticación. Si
+en el futuro la interfaz necesita interactividad rica (edición del
+documento reconstruido, por ejemplo), ese es el momento de justificar una
+SPA — no antes.
+
+FastAPI en particular (sobre Flask/Django) porque: valida el *payload* del
+formulario reutilizando el mismo `AppConfig` de Pydantic que ya existe
+(sin reescribir una capa de validación paralela), tiene soporte nativo de
+`UploadFile`/`BackgroundTasks`/`TestClient` sin dependencias extra, y su
+tipado explícito documenta la API casi gratis (`/docs` autogenerado).
+
+### 13.2 Un job a la vez, con un hilo propio en vez de una cola pesada
+
+El caso de uso declarado es **un libro a la vez**, no un servicio
+multi-tenant de alto volumen. Meter Celery/RQ + Redis (procesos aparte,
+broker, *result backend*, *worker* a supervisar) sería infraestructura sin
+beneficio real para ese caso de uso, y además el propio
+`PipelineOrchestrator` ya paraleliza *dentro* de un job (`ProcessPoolExecutor`
+por página); una cola distribuida paralelizaría *entre* jobs, que es
+justamente lo que no hace falta todavía.
+
+En su lugar, `JobRunner` (`web/jobs/runner.py`) es un único hilo en segundo
+plano que consume un `queue.Queue` FIFO: la subida encola un `job_id` y
+responde de inmediato (no bloquea el request mientras se procesa el
+libro), el hilo los toma de a uno y llama a
+`orchestrator.process_and_export(...)`. La estructura queda preparada para
+crecer sin reescritura: `JobRunner` es el único punto que conocería una
+cola distribuida si hiciera falta (cambiar `queue.Queue` +
+`threading.Thread` por un *broker* real), las rutas HTTP y el store no
+cambian porque solo conocen la interfaz "encolar un id, consultar su
+estado".
+
+### 13.3 Progreso por *polling*, no WebSocket/SSE
+
+El pipeline ya expone progreso por página vía `ProgressCallback`
+(`pipeline/progress.py`), el mismo mecanismo que usan la GUI (señales Qt) y
+la CLI (línea de texto). Para la web, en vez de mantener una conexión
+persistente (WebSocket o Server-Sent Events) con toda la complejidad que
+suma (reconexión, *keep-alive*, proxies que no siempre dejan pasar
+conexiones largas), el callback simplemente escribe el último evento en el
+store (SQLite) y el navegador pregunta `/api/jobs/{id}/status` cada 2-3
+segundos con `fetch`. El requisito explícito era "no necesito progreso en
+tiempo real fino", así que el costo de una conexión persistente no se
+justifica frente a un `setTimeout` con `fetch`.
+
+### 13.4 Persistencia: SQLite, no una base de datos aparte
+
+El historial de jobs (para que sobreviva a un reinicio del proceso) vive
+en un único archivo SQLite (`web/jobs/store.py`), sin servidor de base de
+datos que desplegar/mantener aparte. Alcanza sobradamente para el volumen
+de escritura de "un job a la vez" y para las consultas que hace la
+interfaz (listar, obtener por id, actualizar progreso). No se evaluó
+Postgres/MySQL porque agregarían una dependencia operativa (proceso
+aparte, credenciales, migración) sin necesidad real dado el volumen; si en
+el futuro hiciera falta multi-instancia (varios procesos del servidor web
+compartiendo estado), ese es el punto en el que SQLite deja de alcanzar y
+se justifica un motor cliente-servidor — no antes.
+
+### 13.5 Autenticación: token simple, no un sistema de usuarios
+
+Como el server está pensado para eventualmente correr fuera de
+`localhost`, no debía quedar abierto por defecto. Se implementó el nivel
+mínimo razonable para una instancia de uso personal/reducido: un único
+token (`OCRBOOK_WEB_TOKEN`) comparado con `secrets.compare_digest`,
+guardado en una cookie tras `/login`, y aceptado también como
+`Authorization: Bearer` para scripts/tests. Si no se define la variable de
+entorno, se genera un token aleatorio al arrancar y se loguea (igual que
+hace Jupyter), para que "no configrar nada" nunca signifique "abierto a
+cualquiera". No se implementó un sistema de usuarios/roles porque no hay
+ningún requisito de multi-usuario: sería complejidad sin caso de uso
+detrás. Para producción real, la recomendación (documentada en el README)
+es poner esto detrás de un reverse proxy con HTTPS, ya que la app no
+termina TLS por sí sola.
+
+### 13.6 GitHub Pages: solo una landing page estática
+
+Se agrega un `index.html` en la raíz del repo pensado para GitHub Pages,
+pero GitHub Pages solo sirve archivos estáticos: no puede ejecutar Python,
+FastAPI ni el pipeline de OCR. Por eso ese archivo es exclusivamente una
+página de presentación del proyecto con un enlace a donde el usuario haya
+desplegado su propio `ocrbook-web` — no es, ni pretende ser, un
+reemplazo del servidor.
+
+## 14. Resumen de la pila tecnológica
 
 | Capa | Tecnología |
 |---|---|
@@ -252,7 +354,8 @@ otro" sin tocar el resto del sistema.
 | Configuración | pydantic-settings + YAML |
 | Paralelismo | `concurrent.futures.ProcessPoolExecutor` |
 | CLI | Click |
-| Tests | pytest |
+| Interfaz web | FastAPI + Jinja2 + JS vanilla (polling), SQLite, `uvicorn` |
+| Tests | pytest (+ `fastapi.testclient` para la interfaz web) |
 
 Esta combinación prioriza **calidad de OCR y de reconstrucción** (motores
 intercambiables, heurísticas de párrafo dedicadas, traducción consciente de

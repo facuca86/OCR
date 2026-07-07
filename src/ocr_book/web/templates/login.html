@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ingresar — OCR Book</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container narrow">
+    <h1>OCR Book</h1>
+    <p class="muted">Ingresá el token de acceso para continuar.</p>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <form method="post" action="/login">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label for="token">Token de acceso</label>
+      <input id="token" name="token" type="password" autofocus required>
+      <button type="submit">Entrar</button>
+    </form>
+  </main>
+</body>
+</html>

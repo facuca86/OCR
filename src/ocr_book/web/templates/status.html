@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Job {{ job.id[:8] }} — OCR Book{% endblock %}
+{% block content %}
+<h1>{{ job.filename }}</h1>
+{% if job.page_count %}<p class="muted">{{ job.page_count }} página(s)</p>{% endif %}
+
+<div id="job-status" data-job-id="{{ job.id }}">
+  <p><strong>Estado:</strong> <span id="status-label">{{ job.status.value }}</span></p>
+  <div class="progress-bar"><div id="progress-fill" class="progress-fill" style="width:0%"></div></div>
+  <p id="status-message" class="muted"></p>
+
+  <div id="error-box" class="error" hidden></div>
+
+  <div id="result-box" hidden>
+    <h2>Resultado</h2>
+    <ul id="download-links"></ul>
+    <div id="preview-box" hidden>
+      <h3>Vista previa</h3>
+      <iframe id="preview-frame" title="Vista previa del documento" sandbox=""></iframe>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+  ocrbook.pollJobStatus("{{ job.id }}");
+</script>
+{% endblock %}
