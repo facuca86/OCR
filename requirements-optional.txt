@@ -1,0 +1,14 @@
+# Dependencias opcionales. Instalar solo los extras que se necesiten:
+#   pip install -r requirements.txt
+#   pip install PySide6                       # interfaz gráfica
+#   pip install paddleocr paddlepaddle         # motor OCR de alta precisión
+#   pip install easyocr                        # motor OCR alternativo
+#   pip install argostranslate                 # traducción local/offline
+#   pip install anthropic                      # traducción vía Claude (API)
+
+PySide6>=6.6
+paddleocr>=2.7
+paddlepaddle>=2.6
+easyocr>=1.7
+argostranslate>=1.9
+anthropic>=0.30
