@@ -20,3 +20,18 @@ def get_translation_engine(config: TranslationConfig) -> TranslationEngine:
         return ArgosTranslateEngine()
 
     raise ValueError(f"Motor de traducción desconocido: {config.engine}")
+
+
+def list_available_engines() -> list[TranslationEngineName]:
+    """Motores de traducción cuyas dependencias/credenciales están
+    disponibles en este sistema (`NONE` no se incluye: se representa en la
+    interfaz web como la casilla "activar traducción" desmarcada, no como
+    una opción de motor)."""
+    from ocr_book.translation.anthropic_translator import AnthropicTranslator
+    from ocr_book.translation.argos_translator import ArgosTranslateEngine
+
+    candidates = {
+        TranslationEngineName.ANTHROPIC: AnthropicTranslator(),
+        TranslationEngineName.ARGOS: ArgosTranslateEngine(),
+    }
+    return [name for name, engine in candidates.items() if engine.is_available()]

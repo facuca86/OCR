@@ -42,3 +42,10 @@ def get_engine(config: OcrConfig) -> OcrEngine:
         engine = TesseractEngine()
 
     return engine
+
+
+def list_available_engines() -> list[OcrEngineName]:
+    """Motores OCR cuyas dependencias están instaladas en este sistema.
+    Usado por la interfaz web para no ofrecer en el formulario un motor
+    que fallaría al enviar (ver `ocr_book.web`)."""
+    return [name for name, cls in _lazy_engine_classes().items() if cls().is_available()]

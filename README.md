@@ -74,10 +74,17 @@ Extras opcionales (instalar solo lo que se necesite):
 
 ```bash
 pip install PySide6                       # interfaz gráfica
+pip install fastapi "uvicorn[standard]" jinja2 python-multipart  # interfaz web
 pip install paddleocr paddlepaddle         # motor OCR alternativo de alta precisión
 pip install easyocr                        # motor OCR alternativo
 pip install argostranslate                 # traducción local/offline
 pip install anthropic                      # traducción vía Claude (requiere ANTHROPIC_API_KEY)
+```
+
+O, con el extra correspondiente definido en `pyproject.toml`:
+
+```bash
+pip install -e ".[web]"
 ```
 
 (`requirements-optional.txt` lista lo mismo por si prefieres instalarlo
@@ -115,6 +122,63 @@ ocrbook-gui
 Permite arrastrar archivos, configurar OCR/traducción/salida, ver una
 vista previa de la página de entrada y del documento reconstruido,
 seguir el progreso, revisar el registro y cancelar en cualquier momento.
+
+### Interfaz web
+
+Una interfaz web (FastAPI + HTML/JS simple, sin build) sobre el mismo
+`PipelineOrchestrator` que usan la CLI y la GUI, pensada para poder correr
+en un servidor propio (no solo localhost) y procesar un libro a la vez.
+Ver [`ARCHITECTURE.md`](./ARCHITECTURE.md#13-interfaz-web) para el porqué
+de las decisiones (FastAPI, polling en vez de WebSocket/SSE, SQLite en vez
+de una cola pesada tipo Celery, auth por token).
+
+```bash
+pip install -e ".[web]"
+
+# Definí un token de acceso (recomendado en cualquier deploy que no sea
+# 100% localhost). Si no lo definís, se genera uno aleatorio al arrancar
+# y se imprime en el log del servidor: no queda abierta por defecto.
+export OCRBOOK_WEB_TOKEN="elegí-un-token-largo-y-aleatorio"
+
+# Carpeta de trabajo (subidas + salidas + historial en SQLite). Por
+# defecto ./web_data, fuera del control de versiones.
+export OCRBOOK_WEB_WORKDIR="./web_data"
+
+ocrbook-web
+# equivalente: python -m ocr_book.web
+```
+
+Por defecto escucha en `127.0.0.1:8000` (variables `OCRBOOK_WEB_HOST` /
+`OCRBOOK_WEB_PORT` para cambiarlo). Para exponerlo en un servidor remoto,
+ponelo detrás de un reverse proxy con HTTPS (nginx/Caddy) — la app en sí
+no termina TLS.
+
+Variables de entorno soportadas:
+
+| Variable | Descripción | Por defecto |
+|---|---|---|
+| `OCRBOOK_WEB_TOKEN` | Token de acceso (se pide en `/login`). | uno aleatorio, generado y logueado al arrancar |
+| `OCRBOOK_WEB_WORKDIR` | Carpeta para subidas, salidas y `jobs.db` (SQLite). | `./web_data` |
+| `OCRBOOK_WEB_MAX_JOB_AGE_DAYS` | Antigüedad a partir de la cual "Eliminar jobs antiguos" (en `/history`) los borra. | `30` |
+| `OCRBOOK_WEB_MAX_UPLOAD_MB` | Tamaño máximo de archivo subido. | `300` |
+| `OCRBOOK_WEB_HOST` / `OCRBOOK_WEB_PORT` | Dirección/puerto de escucha. | `127.0.0.1` / `8000` |
+
+Flujo: subís un PDF o imagen, elegís idioma/motor OCR, traducción
+opcional, formatos de salida y las opciones de limpieza de página que ya
+existen en `AppConfig` (mismo esquema que la CLI/GUI: no hay un
+subconjunto hardcodeado aparte); el servidor procesa el libro en segundo
+plano (uno a la vez) y la página de estado hace polling cada pocos
+segundos hasta que termina, mostrando los enlaces de descarga y, si se
+generó HTML, una vista previa embebida. `keep_images`/`keep_tables`
+aparecen deshabilitados en el formulario con la nota "no implementado
+aún", porque el analizador de layout todavía no los soporta (ver
+"Limitaciones conocidas" más abajo) — no se ofrece una opción que no hace
+nada silenciosamente.
+
+Landing page estática (`index.html`, para GitHub Pages u otro hosting
+estático): es solo una página de presentación con un enlace a la URL de
+tu propio servidor ya desplegado — GitHub Pages no puede ejecutar Python,
+así que no reemplaza a `ocrbook-web`.
 
 ### Uso programático
 
@@ -154,6 +218,7 @@ src/ocr_book/
   export/          TXT/Markdown/HTML/DOCX/EPUB/PDF desde el modelo de documento
   pipeline/        orquestador (paralelismo, progreso, cancelación) + CLI
   gui/             aplicación PySide6
+  web/             interfaz web (FastAPI + Jinja2/JS), backend sobre el mismo orquestador
 ```
 
 Cada punto de extensión es una interfaz (`Importer`, `LayoutAnalyzer`,
@@ -165,7 +230,7 @@ correspondiente (`*/factory.py`), sin tocar el resto del pipeline.
 
 ```bash
 pip install -r requirements.txt
-pip install -e ".[dev]"
+pip install -e ".[dev,web]"  # el extra "web" hace falta para tests/test_web_api.py
 pytest                       # suite completa (usa PDFs sintéticos generados en tests/fixtures)
 ruff check src/              # lint
 ```

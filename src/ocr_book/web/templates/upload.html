@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Nuevo documento — OCR Book{% endblock %}
+{% block content %}
+<h1>Convertir un libro escaneado</h1>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<form method="post" action="/upload" enctype="multipart/form-data" id="upload-form">
+  <section class="card">
+    <h2>1. Documento</h2>
+    <div id="drop-zone" class="drop-zone">
+      <p>Arrastrá un PDF o una imagen acá, o</p>
+      <label class="button" for="file-input">elegir archivo…</label>
+      <input id="file-input" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.bmp" required>
+      <p id="file-info" class="muted"></p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. OCR</h2>
+    <label for="ocr_engine">Motor OCR</label>
+    <select id="ocr_engine" name="ocr_engine">
+      {% for value, label, available in ocr_engines %}
+      <option value="{{ value }}" {% if not available %}disabled{% endif %}>
+        {{ label }}{% if not available %} (no instalado en este servidor){% endif %}
+      </option>
+      {% endfor %}
+    </select>
+
+    <fieldset>
+      <legend>Idioma(s) del documento</legend>
+      {% for value, label in ocr_languages %}
+      <label class="checkbox">
+        <input type="checkbox" name="ocr_languages" value="{{ value }}" {% if value in ("spa", "eng") %}checked{% endif %}>
+        {{ label }}
+      </label>
+      {% endfor %}
+    </fieldset>
+
+    <label class="checkbox">
+      <input type="checkbox" id="use_gpu" name="use_gpu">
+      Usar GPU (solo aplica a motores basados en deep learning: PaddleOCR / EasyOCR)
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>3. Traducción (opcional)</h2>
+    <label class="checkbox">
+      <input type="checkbox" id="translation_enabled" name="translation_enabled">
+      Traducir automáticamente el documento
+    </label>
+
+    <div id="translation-fields" class="disabled-group">
+      <label for="translation_target_language">Idioma destino</label>
+      <select id="translation_target_language" name="translation_target_language" disabled>
+        {% for value, label in translation_targets %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="translation_target_language_custom">o código ISO 639-1 personalizado</label>
+      <input id="translation_target_language_custom" name="translation_target_language_custom"
+             type="text" placeholder="ej: sv" maxlength="8" disabled>
+
+      <label for="translation_engine">Motor de traducción</label>
+      <select id="translation_engine" name="translation_engine" disabled>
+        {% for value, label, available in translation_engines %}
+        <option value="{{ value }}" {% if not available %}disabled{% endif %}>
+          {{ label }}{% if not available %} (no disponible en este servidor){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4. Salida</h2>
+    <fieldset>
+      <legend>Formatos a generar</legend>
+      {% for fmt in export_formats %}
+      <label class="checkbox">
+        <input type="checkbox" name="export_formats" value="{{ fmt }}" {% if fmt == "pdf" %}checked{% endif %}>
+        {{ fmt|upper }}
+      </label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset>
+      <legend>Limpieza de página</legend>
+      <label class="checkbox">
+        <input type="checkbox" name="remove_headers"> Eliminar encabezados repetidos
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="remove_footers"> Eliminar pies de página repetidos
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" name="remove_page_numbers"> Eliminar numeración de página
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Elementos del documento</legend>
+      <label class="checkbox disabled">
+        <input type="checkbox" checked disabled> Conservar imágenes
+        <span class="badge">no implementado aún</span>
+      </label>
+      <label class="checkbox disabled">
+        <input type="checkbox" checked disabled> Conservar tablas
+        <span class="badge">no implementado aún</span>
+      </label>
+      <p class="muted small">
+        El modelo de documento y la configuración ya están preparados para esto,
+        pero el analizador de layout todavía solo reconstruye texto (ver README,
+        "Limitaciones conocidas"). Se muestran fijos para no sugerir un
+        comportamiento que hoy no ocurre.
+      </p>
+    </fieldset>
+  </section>
+
+  <button type="submit" id="submit-button">Procesar documento</button>
+</form>
+<script src="/static/app.js"></script>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Historial — OCR Book{% endblock %}
+{% block content %}
+<h1>Historial de jobs</h1>
+
+<form method="post" action="/admin/cleanup" class="inline">
+  <button type="submit" class="secondary">Eliminar jobs antiguos</button>
+</form>
+
+{% if not jobs %}
+<p class="muted">Todavía no procesaste ningún documento.</p>
+{% else %}
+<table class="job-table">
+  <thead>
+    <tr>
+      <th>Archivo</th>
+      <th>Estado</th>
+      <th>Creado</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for job in jobs %}
+    <tr>
+      <td>{{ job.filename }}</td>
+      <td><span class="status-pill status-{{ job.status.value }}">{{ job.status.value }}</span></td>
+      <td>{{ job.created_at[:19] }}</td>
+      <td><a href="/jobs/{{ job.id }}">ver</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
